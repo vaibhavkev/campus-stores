@@ -146,6 +146,7 @@ try {
       `(() => { const el = document.elementFromPoint(${at.x}, ${at.y}); const row = el && el.closest('.row'); return row ? row.querySelector('strong').textContent.trim() : null })()`,
     )
     assert.equal(under, 'Wireless microphone · MI-09', 'the same spot should still belong to the slip just returned')
+    await shot('after-5-undo')
     await ui.pressInRow('L-401', 'Undo')
     assert.equal(await ui.status(), 'Return of MI-09 undone. Slip L-401 is open again.')
     assert.equal(await ui.focused(), 'BUTTON:Record return Wireless microphone · MI-09')

@@ -86,6 +86,10 @@ In the original, **Record return** is one click with no confirmation. The row th
 
 Now the slip just returned stays where it was, marked **Returned**, with an **Undo** button until the next return or a change of page.
 
+| Original | This fork |
+| --- | --- |
+| ![Original: the microphone's slip is closed and cannot be reopened](docs/before-wrong-return.png) | ![This fork: the returned slip stays in place with an Undo button](docs/after-5-undo.png) |
+
 The brief asks for one change and this is a second. I added it because a wrong return leaves the record wrong without anyone noticing, which is the same kind of failure as the first change addresses.
 
 ### The same shift with the change
