@@ -64,6 +64,8 @@ try {
     assert.equal(rows[0].title, 'USB-C → HDMI adapter · AD-12')
     assert.equal(rows[0].sub, 'L-404 · Film Society (RQ-214) · Issued to Kabir Sen · Due Fri 8 pm')
     assert.equal(rows[3].title, 'Wireless microphone · MI-09')
+    const buttons = await page.eval(`[...document.querySelectorAll('#campus-stores .row button')].map(b => b.textContent.trim())`)
+    assert.deepEqual([...new Set(buttons)], ['Record return'], 'pickup looks as before: no slip offers a note yet')
   })
 
   console.log('Friday 7:30 pm - the kit comes back in pieces')
@@ -89,6 +91,7 @@ try {
     await ui.choose('expect', 'Sat 9 am')
     await ui.press('Save note')
     assert.equal(await ui.status(), 'Slip L-404 still out: with Leela Das, expected Sat 9 am.')
+    assert.equal(await ui.focused(), 'BUTTON:Still out… USB-C → HDMI adapter · AD-12', 'keyboard focus should return to the slip')
     assert.match(await ui.pageText(), /Still out · with Leela Das · expected Sat 9 am · noted Friday · 7:30 pm/)
     const rows = await ui.rows()
     assert.equal(rows[0].sub, 'L-404 · Film Society (RQ-214) · Issued to Kabir Sen · Due Fri 8 pm', 'the slip keeps its collector and due time')
@@ -116,6 +119,8 @@ try {
       assert.ok(text.includes(fact), `the register should say "${fact}"`)
     }
     assert.equal(await page.eval(`document.querySelectorAll('#campus-stores .tag.late').length`), 1, 'only the adapter is late; the microphone is due at 10')
+    const micButtons = await page.eval(`[...[...document.querySelectorAll('#campus-stores .row')].find(r => r.textContent.includes('L-401')).querySelectorAll('button')].map(b => b.textContent.trim())`)
+    assert.deepEqual(micButtons, ['Record return'], 'a slip that is on time and whole is not offered a note')
   })
   await shot('after-3-morning')
   await step('every row button has its own accessible name', async () => {
@@ -147,10 +152,13 @@ try {
     assert.equal(await ui.clock(), 'Saturday · 9:00 am')
     assert.equal((await ui.rows()).length, 2)
   })
-  await step('phone width: no sideways scroll', async () => {
+  await step('phone width: no sideways scroll, and item names keep the full row width', async () => {
     await page.setViewport({ width: 375, height: 812, scale: 2, mobile: true })
     await page.reload()
     assert.equal(await page.eval(`document.documentElement.scrollWidth <= innerWidth`), true)
+    const nameWidth = await page.eval(`[...document.querySelectorAll('#campus-stores .row strong')].find(e => e.textContent.includes('AD-12')).parentElement.getBoundingClientRect().width`)
+    assert.ok(nameWidth > 280, `the item name is squeezed to ${Math.round(nameWidth)}px`)
+    if (shotDir) await ui.shot(resolve(shotDir, 'after-4-phone.png'))
     await page.setViewport()
   })
 } finally {

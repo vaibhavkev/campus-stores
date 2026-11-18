@@ -117,10 +117,15 @@
   });
   let s = original();
   let focusNote = false;
+  let focusBack = "";
   const getAsset = (id) => assets.find((x) => x.id === id);
   const getReq = (id) => requests.find((x) => x.id === id);
   const out = (id) => s.loans.find((l) => l.asset === id && !l.back);
   const late = (l) => !l.back && clock[s.phase] > dueAt[l.due];
+  // A slip can be noted once it is late, or once part of its request has come back.
+  const canNote = (l) =>
+    l.holder || late(l) || s.loans.some((x) => x.req === l.req && x.back);
+  const noteButton = (num) => '[data-action="still"][data-val="' + num + '"]';
   const esc = (x) =>
     String(x).replace(
       /[&<>"']/g,
@@ -157,8 +162,10 @@
     "</small></div>" +
     control +
     "</div>";
-  const row = (label, sub, right) =>
-    '<div class="row"><div><strong>' +
+  const row = (label, sub, right, kind = "") =>
+    '<div class="row' +
+    (kind ? " " + kind : "") +
+    '"><div><strong>' +
     esc(label) +
     "</strong><small>" +
     esc(sub) +
@@ -338,8 +345,11 @@
         l.back
           ? badge("Returned")
           : (late(l) ? '<span class="tag late">Overdue</span>' : "") +
-              btn("Still out…", "still", String(l.num), "", "Still out… " + name) +
+              (canNote(l)
+                ? btn("Still out…", "still", String(l.num), "", "Still out… " + name)
+                : "") +
               btn("Record return", "return", String(l.num), "", "Record return " + name),
+        "slip",
       );
       if (l.holder && !l.back) html += stillLine(l);
       if (s.noting === l.num) html += stillForm(l);
@@ -439,6 +449,9 @@
       if (focusNote) noting.elements.holder.focus();
     }
     focusNote = false;
+    // After saving or cancelling a note, put keyboard focus back on its slip.
+    if (focusBack && q(focusBack)) q(focusBack).focus();
+    focusBack = "";
     q("[data-status]").textContent = s.notice;
   }
   function commit(msg) {
@@ -473,6 +486,7 @@
         focusNote = s.noting > 0;
         break;
       case "stillcancel":
+        focusBack = noteButton(s.noting);
         s.noting = 0;
         break;
       case "close":
@@ -537,6 +551,7 @@
       // The slip stays open, in the collector's name, with its original due time.
       Object.assign(l, { holder, expect, noted: s.phase });
       s.noting = 0;
+      focusBack = noteButton(l.num);
       commit(
         "Slip L-" +
           l.num +

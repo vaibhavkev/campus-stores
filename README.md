@@ -11,7 +11,7 @@ Fork of [virinchi-healthcare/campus-stores](https://github.com/virinchi-healthca
 
 ## Trying the change
 
-1. Open `index.html` in a browser.
+1. Open the [live demo](https://vaibhavkev.github.io/campus-stores/), or open `index.html` in a browser.
 2. In **Loan register**, issue the Film Society's three items to Kabir Sen.
 3. Click **Move to return time**.
 4. Record the projector and the speaker as returned. The adapter's slip asks who has it.
@@ -34,6 +34,8 @@ I would reconsider if the desk grew much larger. With a few hundred open slips t
 At Friday 7:30 pm, Kabir returns the projector and the speaker but not the adapter.
 
 I clicked **Record return** on the projector's slip and on the speaker's slip. Both closed, the adapter's slip stayed open, and Inventory showed the two returned units as on the shelf.
+
+![Original app after returning two of three items: the adapter's slip is still open](docs/before-partial-return.png)
 
 This works because the register keeps one slip per physical unit. The same rule makes pickup slower, since each item needs its own slip, but it is what makes a partial return simple.
 
@@ -59,12 +61,13 @@ Neither option is good. The first keeps the record accurate but hides the inform
 
 ### The change
 
-An open slip can be marked **Still out**, with who has the item and when it is expected.
+The change is one thing: an open slip can be marked **Still out**, with who has the item and when it is expected.
 
 - When a return leaves one item of a request outstanding, that slip asks for the two details straight away.
 - The slip stays open under the original collector and due time, so the history stays accurate.
-- Each row now shows the item type and the club, not only the codes, and shows **Overdue** after the due time.
-- The Desk book lists the same note, read from the slip.
+- A slip offers **Still out** only once it is overdue or part of its request has come back. Pickup looks the same as before.
+
+The note is only useful if the next shift can read the row it sits on. So each row now shows the item type and the club as well as the codes, and shows **Overdue** after the due time. The Desk book lists the same note, read from the slip.
 
 The change does not extend the loan or approve a late return. It records what the desk was told.
 
@@ -88,10 +91,10 @@ On Saturday 9:00 am, the register shows which slip the adapter belongs to:
 
 ## What I would keep
 
-- One slip per physical unit.
-- The checks on the issue form.
-- Inventory status calculated from the slips.
-- The Desk book, for notes that do not belong to a slip.
+- **One slip per physical unit.** It is why the partial return worked. Merging slips into one loan per request would make pickup faster and break this.
+- **The checks on the issue form.** With the film starting in fifteen minutes, they stopped me issuing the wrong item.
+- **Inventory status calculated from the slips.** There is no second list that can drift out of step.
+- **The Desk book.** Messages from clubs and general notes still need somewhere to go. It should not be the only place a loan's status lives.
 
 ## Checking it at a real counter
 

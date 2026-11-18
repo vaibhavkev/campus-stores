@@ -289,6 +289,15 @@ body > main {
   background: var(--desk);
   border-left: 3px solid var(--sel);
 }
+/* A slip row carries up to three controls, so on narrow screens they sit under the text. */
+@container (max-width: 780px) {
+  #campus-stores .row.slip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #campus-stores .row.slip > div:last-child {
+    justify-content: flex-start;
+  }
+}
 #campus-stores .record {
   margin-top: 14px;
   padding: 12px 13px;
