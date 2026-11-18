@@ -9,6 +9,12 @@ Fork of [virinchi-healthcare/campus-stores](https://github.com/virinchi-healthca
 - It has no way to record why a slip is still open. I added one: an open slip can now show who has the item and when it is expected back.
 - The change is in [`app.js`](app.js) (search for `still`), about 140 lines, with a few rules in [`styles.css`](styles.css).
 
+The register on Saturday morning, when Leela brings back the adapter:
+
+| Original | This fork |
+| --- | --- |
+| ![Original register: two rows of codes](docs/before-morning.png) | ![This fork: the adapter's slip says it is overdue, with Leela Das, expected Sat 9 am](docs/after-3-morning.png) |
+
 ## Trying the change
 
 1. Open the [live demo](https://vaibhavkev.github.io/campus-stores/), or open `index.html` in a browser.
