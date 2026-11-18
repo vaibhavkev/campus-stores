@@ -7,7 +7,8 @@ Fork of [virinchi-healthcare/campus-stores](https://github.com/virinchi-healthca
 - I would keep this product. Its core record, one slip per physical unit, is right, and the problem I found was small to fix.
 - It handles a partial return well. When two of three items came back, I closed two slips and the third stayed open.
 - It has no way to record why a slip is still open. I added one: an open slip can now show who has the item and when it is expected back.
-- The change is in [`app.js`](app.js) (search for `still`), about 140 lines, with a few rules in [`styles.css`](styles.css).
+- I also added **Undo** for the most recent return, because a mistaken click could not be reversed.
+- The change is in [`app.js`](app.js) (search for `still` and `undo`), about 160 lines, with a few rules in [`styles.css`](styles.css).
 
 The register on Saturday morning, when Leela brings back the adapter:
 
@@ -79,6 +80,14 @@ The change does not extend the loan or approve a late return. It records what th
 
 Due times are compared using a fixed table for this sample shift. A real version would store timestamps.
 
+### A second, smaller change: undoing a return
+
+In the original, **Record return** is one click with no confirmation. The row then disappears and the rows below move up, so a second click in the same place closes a different slip, with no way to reopen it. I closed the Debate Union's microphone slip this way while testing, and Inventory then showed the microphone as on the shelf.
+
+Now the slip just returned stays where it was, marked **Returned**, with an **Undo** button until the next return or a change of page.
+
+The brief asks for one change and this is a second. I added it because a wrong return leaves the record wrong without anyone noticing, which is the same kind of failure as the first change addresses.
+
 ### The same shift with the change
 
 Pickup on Friday 3:45 pm is unchanged.
@@ -112,10 +121,10 @@ The change has helped if the person on shift closes the correct slip without ope
 
 ## Known issues I did not change
 
-The brief asks for one change, so these are unchanged from the original:
+These are unchanged from the original:
 
 - Issuing three items takes 18 clicks and selections, because the form is filled in once per item.
-- A return cannot be undone. It is a single click with no confirmation, and the remaining rows move up, so a second click in the same place acts on a different slip. I would fix this next.
+- Only the most recent return can be undone. Older returns still cannot be reopened.
 - Nothing checks that the item handed over is the unit on the slip. Each row shows the unit's tag, such as AD-12, so the person at the desk can match it against the item, but two adapters share a bin and the app accepts the click either way.
 - The issue form does not check the collector or the return time against the request.
 - Validation messages appear only in the footer.
@@ -136,7 +145,7 @@ python3 -m http.server 8000 --bind 127.0.0.1
 node tests/walkthrough.mjs
 ```
 
-This replays the three-step shift in headless Chrome and runs 13 checks against the page. It requires Node 22 or newer and Chrome or Edge, with no other dependencies.
+This replays the three-step shift in headless Chrome and runs 14 checks against the page. It requires Node 22 or newer and Chrome or Edge, with no other dependencies.
 
 ## Licence notices
 

@@ -112,6 +112,7 @@
     notes: [],
     editing: false,
     noting: 0,
+    undo: 0,
     onlyOpen: true,
     notice: "Sample shift · All records are fictional.",
   });
@@ -323,7 +324,9 @@
         .join("") +
       "</div>";
     const shown = s.loans
-      .filter((l) => !s.onlyOpen || !l.back)
+      // The slip just returned stays in place, so the row under the pointer
+      // does not become another slip, and the return can be undone.
+      .filter((l) => !s.onlyOpen || !l.back || l.num === s.undo)
       .slice()
       .reverse();
     if (!shown.length) html += "<p>No outstanding slips.</p>";
@@ -343,7 +346,10 @@
           " · Due " +
           l.due,
         l.back
-          ? badge("Returned")
+          ? badge("Returned") +
+            (l.num === s.undo
+              ? btn("Undo", "undo", String(l.num), "", "Undo return " + name)
+              : "")
           : (late(l) ? '<span class="tag late">Overdue</span>' : "") +
               (canNote(l)
                 ? btn("Still out…", "still", String(l.num), "", "Still out… " + name)
@@ -474,13 +480,26 @@
         break;
       case "advance":
         if (s.phase < 2) s.phase++;
+        s.undo = 0;
         s.notice = "Shift time updated.";
         break;
       case "tab":
         s.tab = v;
         s.editing = false;
         s.noting = 0;
+        s.undo = 0;
         break;
+      case "undo": {
+        const l = s.loans.find((l) => l.num === Number(v));
+        if (!l || !l.back || l.num !== s.undo || out(l.asset)) return;
+        l.back = false;
+        s.undo = 0;
+        s.noting = 0;
+        focusBack = '[data-action="return"][data-val="' + l.num + '"]';
+        s.notice =
+          "Return of " + l.asset + " undone. Slip L-" + l.num + " is open again.";
+        break;
+      }
       case "still":
         s.noting = s.noting === Number(v) ? 0 : Number(v);
         focusNote = s.noting > 0;
@@ -509,6 +528,7 @@
         const l = s.loans.find((l) => l.num === Number(v));
         if (!l || l.back) return;
         l.back = true;
+        s.undo = l.num;
         s.notice = l.asset + " returned to stock. Slip L-" + l.num + " closed.";
         if (s.noting === l.num) s.noting = 0;
         // When one unit from the same request is left out, ask the one
@@ -520,6 +540,8 @@
           s.notice +=
             " One item from " + l.req + " is still out: note who has it.";
         }
+        if (!focusNote)
+          focusBack = '[data-action="undo"][data-val="' + l.num + '"]';
         break;
       }
     }
@@ -587,6 +609,7 @@
     }
     const num = Math.max(...s.loans.map((l) => l.num)) + 1;
     s.loans.push({ num, req, asset, who, due, back: false });
+    s.undo = 0;
     s.editing = false;
     commit("Issued " + asset + " to " + who + " on slip L-" + num + ".");
   });
@@ -621,6 +644,7 @@
       notes: d.notes.map((n) => ({ ...n })),
     };
     if (!s.loans.some((l) => l.num === s.noting && !l.back)) s.noting = 0;
+    if (!s.loans.some((l) => l.num === s.undo && l.back)) s.undo = 0;
     paint();
   }
   paint();

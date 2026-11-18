@@ -131,13 +131,25 @@ try {
   await step('Leela hands over the adapter: one click closes the right slip and clears the note', async () => {
     await ui.pressInRow('L-404', 'Record return')
     assert.equal(await ui.status(), 'AD-12 returned to stock. Slip L-404 closed.')
-    const rows = await ui.rows()
-    assert.equal(rows.length, 1)
-    assert.equal(rows[0].title, 'Wireless microphone · MI-09')
+    const open = (await ui.rows()).filter((r) => r.action !== 'Returned')
+    assert.equal(open.length, 1)
+    assert.equal(open[0].title, 'Wireless microphone · MI-09')
     assert.equal((await inventory())['AD-12'], 'On shelf')
     await ui.go('Desk book')
     assert.ok(!(await ui.pageText()).includes('Still out ·'))
     await ui.go('Loan register')
+  })
+  await step('a mistaken return stays in place and can be undone', async () => {
+    const at = await ui.pressInRow('L-401', 'Record return')
+    assert.equal(await ui.status(), 'MI-09 returned to stock. Slip L-401 closed.')
+    const under = await page.eval(
+      `(() => { const el = document.elementFromPoint(${at.x}, ${at.y}); const row = el && el.closest('.row'); return row ? row.querySelector('strong').textContent.trim() : null })()`,
+    )
+    assert.equal(under, 'Wireless microphone · MI-09', 'the same spot should still belong to the slip just returned')
+    await ui.pressInRow('L-401', 'Undo')
+    assert.equal(await ui.status(), 'Return of MI-09 undone. Slip L-401 is open again.')
+    assert.equal(await ui.focused(), 'BUTTON:Record return Wireless microphone · MI-09')
+    assert.equal((await inventory())['MI-09'], 'On loan')
   })
   await step('a single-item loan is returned as before, with no question asked', async () => {
     await ui.pressInRow('L-401', 'Record return')
