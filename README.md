@@ -71,6 +71,8 @@ The note is only useful if the next shift can read the row it sits on. So each r
 
 The change does not extend the loan or approve a late return. It records what the desk was told.
 
+Due times are compared using a fixed table for this sample shift. A real version would store timestamps.
+
 ### The same shift with the change
 
 Pickup on Friday 3:45 pm is unchanged.
@@ -108,6 +110,7 @@ The brief asks for one change, so these are unchanged from the original:
 
 - Issuing three items takes 18 clicks and selections, because the form is filled in once per item.
 - A return cannot be undone. It is a single click with no confirmation, and the remaining rows move up, so a second click in the same place acts on a different slip. I would fix this next.
+- Nothing checks that the item handed over is the unit on the slip. Each row shows the unit's tag, such as AD-12, so the person at the desk can match it against the item, but two adapters share a bin and the app accepts the click either way.
 - The issue form does not check the collector or the return time against the request.
 - Validation messages appear only in the footer.
 
