@@ -7,7 +7,7 @@ Fork of [virinchi-healthcare/campus-stores](https://github.com/virinchi-healthca
 - I would keep this product. Its core record, one slip per physical unit, is right, and the problem I found was small to fix.
 - It handles a partial return well. When two of three items came back, I closed two slips and the third stayed open.
 - It has no way to record why a slip is still open. I added one: an open slip can now show who has the item and when it is expected back.
-- The change is in [`app.js`](app.js) (search for `still`), about 120 lines, with a few rules in [`styles.css`](styles.css).
+- The change is in [`app.js`](app.js) (search for `still`), about 140 lines, with a few rules in [`styles.css`](styles.css).
 
 ## Trying the change
 
