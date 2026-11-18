@@ -83,6 +83,10 @@
       text: "You’ve just taken over. Leela walks in with an adapter. Work out what was outstanding from the screening and close the loan for the right item.",
     },
   ];
+  // Hours from Friday 00:00, so the register can tell when a slip is late.
+  const clock = [15.75, 19.5, 33];
+  const dueAt = { "Fri 8 pm": 20, "Sat 9 am": 33, "Sat 10 am": 34, "Sat noon": 36 };
+  const times = Object.keys(dueAt);
   const pages = [
     ["Requests", "clipboard-list"],
     ["Inventory", "package"],
@@ -107,13 +111,16 @@
     ],
     notes: [],
     editing: false,
+    noting: 0,
     onlyOpen: true,
     notice: "Sample shift · All records are fictional.",
   });
   let s = original();
+  let focusNote = false;
   const getAsset = (id) => assets.find((x) => x.id === id);
   const getReq = (id) => requests.find((x) => x.id === id);
   const out = (id) => s.loans.find((l) => l.asset === id && !l.back);
+  const late = (l) => !l.back && clock[s.phase] > dueAt[l.due];
   const esc = (x) =>
     String(x).replace(
       /[&<>"']/g,
@@ -130,14 +137,16 @@
     list
       .map(([v, t]) => '<option value="' + esc(v) + '">' + esc(t) + "</option>")
       .join("");
-  const btn = (label, act, val = "", style = "") =>
+  const btn = (label, act, val = "", style = "", name = "") =>
     '<button type="button" data-action="' +
     act +
     '" data-val="' +
     esc(val) +
     '" class="' +
     style +
-    '">' +
+    '"' +
+    (name ? ' aria-label="' + esc(name) + '"' : "") +
+    ">" +
     esc(label) +
     "</button>";
   const head = (title, sub, control = "") =>
@@ -158,6 +167,41 @@
     "</div></div>";
   const badge = (t, good = false) =>
     '<span class="tag' + (good ? " good" : "") + '">' + esc(t) + "</span>";
+  const select = (label, key, options) =>
+    "<label><span>" +
+    label +
+    '</span><select name="' +
+    key +
+    '" required><option value="">Select…</option>' +
+    opts(options) +
+    "</select></label>";
+  // The change: a slip that stays open can say why. It records who has the
+  // unit now and when it is expected, without closing or rewriting the slip.
+  const stillLine = (l) =>
+    '<p class="still"><b>Still out</b> · with ' +
+    esc(l.holder) +
+    " · expected " +
+    esc(l.expect) +
+    " · noted " +
+    esc(shifts[l.noted].time) +
+    "</p>";
+  const stillForm = (l) =>
+    '<form data-still="' +
+    l.num +
+    '" class="stillform"><div class="form">' +
+    select(
+      "Who has it now",
+      "holder",
+      people.map((p) => [p, p]),
+    ) +
+    select(
+      "Expected back",
+      "expect",
+      times.map((t) => [t, t]),
+    ) +
+    '</div><div class="buttons"><button type="submit" class="primary">Save note</button>' +
+    btn("Cancel", "stillcancel") +
+    "</div></form>";
   function requestPage() {
     let html = head(
       "Approved requests",
@@ -230,14 +274,6 @@
     );
     if (s.editing) {
       const available = assets.filter((a) => !a.repair && !out(a.id));
-      const select = (label, key, options) =>
-        "<label><span>" +
-        label +
-        '</span><select name="' +
-        key +
-        '" required><option value="">Select…</option>' +
-        opts(options) +
-        "</select></label>";
       return (
         html +
         '<form data-issue><div class="form">' +
@@ -259,7 +295,7 @@
         select(
           "Return by",
           "due",
-          ["Fri 8 pm", "Sat 9 am", "Sat 10 am", "Sat noon"].map((d) => [d, d]),
+          times.map((d) => [d, d]),
         ) +
         '</div><button type="submit" class="primary">Save issue slip</button></form>'
       );
@@ -284,14 +320,30 @@
       .slice()
       .reverse();
     if (!shown.length) html += "<p>No outstanding slips.</p>";
-    for (const l of shown)
+    for (const l of shown) {
+      // Plain words first: what the unit is and whose job it belongs to.
+      const name = getAsset(l.asset).type + " · " + l.asset;
       html += row(
-        "L-" + l.num + " · " + l.asset,
-        l.req + " · " + l.who + " · Due " + l.due,
+        name,
+        "L-" +
+          l.num +
+          " · " +
+          getReq(l.req).club +
+          " (" +
+          l.req +
+          ") · Issued to " +
+          l.who +
+          " · Due " +
+          l.due,
         l.back
           ? badge("Returned")
-          : btn("Record return", "return", String(l.num)),
+          : (late(l) ? '<span class="tag late">Overdue</span>' : "") +
+              btn("Still out…", "still", String(l.num), "", "Still out… " + name) +
+              btn("Record return", "return", String(l.num), "", "Record return " + name),
       );
+      if (l.holder && !l.back) html += stillLine(l);
+      if (s.noting === l.num) html += stillForm(l);
+    }
     return html;
   }
   function deskbook() {
@@ -319,6 +371,22 @@
       ]);
     for (const n of s.notes)
       entries.push([shifts[n.phase].time, "Counter handover", n.text]);
+    // Slips that say why they are still open show here too, read from the slip itself.
+    for (const l of s.loans)
+      if (l.holder && !l.back)
+        entries.push([
+          shifts[l.noted].time,
+          "Still out · " + getAsset(l.asset).type + " " + l.asset,
+          "With " +
+            l.holder +
+            ", expected " +
+            l.expect +
+            ". Slip L-" +
+            l.num +
+            ", " +
+            getReq(l.req).club +
+            ".",
+        ]);
     for (const [t, author, body] of entries.slice().reverse())
       html +=
         '<article class="record"><small>' +
@@ -363,6 +431,14 @@
       .join("");
     q("[data-page]").innerHTML = screens[s.tab]();
     if (q("[data-filter]")) q("[data-filter]").value = s.filter;
+    const noting = q("[data-still]");
+    if (noting) {
+      const l = s.loans.find((x) => x.num === s.noting);
+      noting.elements.holder.value = l.holder || "";
+      noting.elements.expect.value = l.expect || "";
+      if (focusNote) noting.elements.holder.focus();
+    }
+    focusNote = false;
     q("[data-status]").textContent = s.notice;
   }
   function commit(msg) {
@@ -390,6 +466,14 @@
       case "tab":
         s.tab = v;
         s.editing = false;
+        s.noting = 0;
+        break;
+      case "still":
+        s.noting = s.noting === Number(v) ? 0 : Number(v);
+        focusNote = s.noting > 0;
+        break;
+      case "stillcancel":
+        s.noting = 0;
         break;
       case "close":
         s.selected = "";
@@ -399,6 +483,7 @@
         break;
       case "new":
         s.editing = true;
+        s.noting = 0;
         break;
       case "cancel":
         s.editing = false;
@@ -411,6 +496,16 @@
         if (!l || l.back) return;
         l.back = true;
         s.notice = l.asset + " returned to stock. Slip L-" + l.num + " closed.";
+        if (s.noting === l.num) s.noting = 0;
+        // When one unit from the same request is left out, ask the one
+        // question the desk can answer right now: who has it, and until when.
+        const rest = s.loans.filter((x) => x.req === l.req && !x.back);
+        if (rest.length === 1 && !rest[0].holder) {
+          s.noting = rest[0].num;
+          focusNote = true;
+          s.notice +=
+            " One item from " + l.req + " is still out: note who has it.";
+        }
         break;
       }
     }
@@ -431,6 +526,26 @@
       if (!text) return;
       s.notes.push({ phase: s.phase, text });
       commit("Handover note saved.");
+      return;
+    }
+    if (f.matches("[data-still]")) {
+      const l = s.loans.find((x) => x.num === Number(f.dataset.still));
+      const holder = form.get("holder"),
+        expect = form.get("expect");
+      if (!l || l.back || !people.includes(holder) || !(expect in dueAt))
+        return;
+      // The slip stays open, in the collector's name, with its original due time.
+      Object.assign(l, { holder, expect, noted: s.phase });
+      s.noting = 0;
+      commit(
+        "Slip L-" +
+          l.num +
+          " still out: with " +
+          holder +
+          ", expected " +
+          expect +
+          ".",
+      );
       return;
     }
     if (!f.matches("[data-issue]")) return;
@@ -475,7 +590,12 @@
       !d.loans.length ||
       !d.loans.every(
         (l) =>
-          l && getReq(l.req) && getAsset(l.asset) && Number.isInteger(l.num),
+          l &&
+          getReq(l.req) &&
+          getAsset(l.asset) &&
+          Number.isInteger(l.num) &&
+          (l.holder == null ||
+            (people.includes(l.holder) && l.expect in dueAt && shifts[l.noted])),
       )
     )
       return;
@@ -485,6 +605,7 @@
       loans: d.loans.map((l) => ({ ...l })),
       notes: d.notes.map((n) => ({ ...n })),
     };
+    if (!s.loans.some((l) => l.num === s.noting && !l.back)) s.noting = 0;
     paint();
   }
   paint();

@@ -1,30 +1,131 @@
 # Campus Stores
 
-Campus Stores is a Product Engineer work sample set at a fictional campus media equipment desk. Work through a club’s screening, from equipment pickup to a partial return and the next morning’s handover. Open **Candidate brief** in the app for the assignment.
+Fork of [virinchi-healthcare/campus-stores](https://github.com/virinchi-healthcare/campus-stores) for the Product Engineer work sample. This README covers what I found while working the sample shift, the one change I made, and how to run it.
 
-## Run the app
+## Summary
 
-Open `index.html` in a modern browser. The app includes its scripts, styles, and icons and can run offline.
+- I would keep this product. Its core record, one slip per physical unit, is right, and the problem I found was small to fix.
+- It handles a partial return well. When two of three items came back, I closed two slips and the third stayed open.
+- It has no way to record why a slip is still open. I added one: an open slip can now show who has the item and when it is expected back.
+- The change is in [`app.js`](app.js) (search for `still`), about 120 lines, with a few rules in [`styles.css`](styles.css).
 
-To serve it over local HTTP, run this from the repository folder and visit `http://localhost:8000`.
+## Trying the change
+
+1. Open `index.html` in a browser.
+2. In **Loan register**, issue the Film Society's three items to Kabir Sen.
+3. Click **Move to return time**.
+4. Record the projector and the speaker as returned. The adapter's slip asks who has it.
+5. Choose Leela Das and Sat 9 am, save, then click **Move to next morning**.
+
+## Would I keep this product?
+
+Yes. The practical alternatives for a desk this size are a paper register or a spreadsheet, and the product does things neither can:
+
+- It refused to issue a camera that was not on the approved request.
+- It never offered the projector that is in repair.
+- Inventory updated on its own when I recorded a return.
+
+The one place a paper register does better is that you can write a note next to an entry, such as "Leela has it, back at 9". The product had no equivalent. That is a missing feature, not a design problem, and it was a small change to add.
+
+I would reconsider if the desk grew much larger. With a few hundred open slips the register would need search, and issuing items one form at a time would be too slow.
+
+## What works well: partial returns
+
+At Friday 7:30 pm, Kabir returns the projector and the speaker but not the adapter.
+
+I clicked **Record return** on the projector's slip and on the speaker's slip. Both closed, the adapter's slip stayed open, and Inventory showed the two returned units as on the shelf.
+
+This works because the register keeps one slip per physical unit. The same rule makes pickup slower, since each item needs its own slip, but it is what makes a partial return simple.
+
+## What I changed: slips that stay open
+
+### The problem
+
+After that return, the morning shift needs to know that Leela has the adapter and will bring it at 9 am. The open slip has one button, **Record return**, and cannot be edited. I tried the two options the product allows.
+
+**Option 1: leave the slip as it is and write a note in the Desk book.** On Saturday morning the register looked like this:
+
+![Original app on Saturday morning](docs/before-morning.png)
+
+The register does not mention the adapter, the Film Society, Leela, or that the slip is overdue. That information is in a free-text note on a different page.
+
+**Option 2: record the adapter as returned and issue it again to Leela.** The issue form accepts Leela Das with a return time of Sat 9 am, even though the request says Friday 8 pm.
+
+![Original app after reissuing the adapter to Leela](docs/before-workaround.png)
+
+The register now shows Leela and 9 am, but the history contains a return that did not happen, and Inventory briefly showed the adapter as on the shelf.
+
+Neither option is good. The first keeps the record accurate but hides the information from the next shift. The second shows the information but makes the record wrong.
+
+### The change
+
+An open slip can be marked **Still out**, with who has the item and when it is expected.
+
+- When a return leaves one item of a request outstanding, that slip asks for the two details straight away.
+- The slip stays open under the original collector and due time, so the history stays accurate.
+- Each row now shows the item type and the club, not only the codes, and shows **Overdue** after the due time.
+- The Desk book lists the same note, read from the slip.
+
+The change does not extend the loan or approve a late return. It records what the desk was told.
+
+### The same shift with the change
+
+Pickup on Friday 3:45 pm is unchanged.
+
+At Friday 7:30 pm, after the projector and speaker are returned, the adapter's slip asks who has it:
+
+![The remaining slip asks who has the item and when it is expected](docs/after-1-evening-asks.png)
+
+After choosing Leela Das and Sat 9 am:
+
+![The slip shows it is still out, with Leela Das, expected Sat 9 am](docs/after-2-evening-noted.png)
+
+On Saturday 9:00 am, the register shows which slip the adapter belongs to:
+
+![Saturday morning: the adapter's slip is overdue, with Leela Das, expected Sat 9 am](docs/after-3-morning.png)
+
+**Record return** closes it. The microphone's slip, due at 10 am, is unaffected.
+
+## What I would keep
+
+- One slip per physical unit.
+- The checks on the issue form.
+- Inventory status calculated from the slips.
+- The Desk book, for notes that do not belong to a slip.
+
+## Checking it at a real counter
+
+I would watch the morning shift change, and wait for an item that was left out overnight to be returned by someone other than the named collector.
+
+The change has helped if the person on shift closes the correct slip without opening the Desk book or asking a colleague who took the item out. If they still need to do either, it has not.
+
+## Known issues I did not change
+
+The brief asks for one change, so these are unchanged from the original:
+
+- Issuing three items takes 18 clicks and selections, because the form is filled in once per item.
+- A return cannot be undone. It is a single click with no confirmation, and the remaining rows move up, so a second click in the same place acts on a different slip. I would fix this next.
+- The issue form does not check the collector or the return time against the request.
+- Validation messages appear only in the footer.
+
+## Running the app
+
+Open `index.html` in a modern browser. It runs from disk and works offline. **Restart sample shift** restores the starting records.
+
+To serve it over local HTTP:
 
 ```sh
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-Each browser stores its own sample shift locally when browser storage is available. **Restart sample shift** restores the fictional starting records.
+## Tests
 
-## Source
+```sh
+node tests/walkthrough.mjs
+```
 
-- `index.html` contains the desk layout, candidate brief, and bundled icons.
-- `app.js` contains the sample records and interactions.
-- `styles.css` defines the desktop and mobile layouts.
+This replays the three-step shift in headless Chrome and runs 13 checks against the page. It requires Node 22 or newer and Chrome or Edge, with no other dependencies.
 
-Icon license notices are in [third-party/lucide-LICENSE.txt](third-party/lucide-LICENSE.txt).
+## Licence notices
 
-
-## Submit your work
-
-1. [Fork Campus Stores](https://github.com/virinchi-healthcare/campus-stores/fork) into your GitHub account. Complete the candidate brief and push your changes to your public fork. In your README, point reviewers to your work and explain the decision you made.
-2. In your fork, open **Commits**, select the final commit you want reviewed, and copy the page URL. It should look like `https://github.com/YOUR-USERNAME/campus-stores/commit/COMMIT-SHA`.
-3. [Submit your work through the Google Form](https://docs.google.com/forms/d/e/1FAIpQLScvzoh1R4WS-SkiwAVBQbMvniieJYSoOEfLMyVo5CyjOvYUgQ/viewform). Your **roll number**, **email ID**, and **final commit link from your public fork** are required. Enter your roll number and email ID in the form only.
+Icon licence notices are in [third-party/lucide-LICENSE.txt](third-party/lucide-LICENSE.txt).

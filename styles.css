@@ -263,6 +263,32 @@ body > main {
   background: var(--ok);
   color: var(--oktxt);
 }
+#campus-stores .late {
+  background: var(--memo);
+  color: var(--memotxt);
+  font-weight: 600;
+}
+#campus-stores .row > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+#campus-stores .still {
+  margin: -2px 0 10px;
+  padding: 7px 11px;
+  background: var(--memo);
+  color: var(--memotxt);
+  border-left: 3px solid var(--mark);
+  font-size: 13px;
+}
+#campus-stores .stillform {
+  margin: 0 0 12px;
+  padding: 4px 12px 10px;
+  background: var(--desk);
+  border-left: 3px solid var(--sel);
+}
 #campus-stores .record {
   margin-top: 14px;
   padding: 12px 13px;
